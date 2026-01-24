@@ -48,6 +48,7 @@ class NCAAClient:
             .order_by('id')
         )
     
+    @classmethod
     def fetch_base_domain(cls):
 
         def fetch(directory):
