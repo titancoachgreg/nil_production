@@ -1,0 +1,57 @@
+Directory:
+
+Top Level Folder: nil_production_local
+
+Sub Folders
+    - database: local folder that houses sql queries for database, not material for production
+    - djangoapp: folder that houses any django application
+        - ingestion: django app that facilitates interaction with ingestion (raw data, pre production)
+        - production: django app that will facilitate interaction with front end application after substantial staging of ingestion data
+    - frontend: will serve as the front end application that interacts with django. I would prefer to use something like react or vue and have django cross interact with certain urls
+    - object_storage: houses interaction with minio object storage for BLOBs
+    - scraping: houses functionality for scraping raw data and pushing to ingestion tables in the database or object storage
+    - staging: will house functionality for staging the data from object storage and the Postgres databse into production tables in postgres
+    - venv: virtualenv for python dependencies, will transfer to docker later
+
+Files
+- dockerignore
+- .env: houses database and minio credentials
+- gitignore
+- docker-compose: holds functionality for containerizing postgres and minio, need to augment to include frontend application
+- Dockerfile
+- manage.py: Django CLI interface, currently runs full ingestion pipeline or specific ingestion commands if needed
+    This is also something that I sort of like want to "push" to the server where there are like "private" endpoints that allow admin to refresh directory data
+- requirements.txt
+
+Status:
+
+1. Scrape NCAA directory
+2. Pull external_id, name, member_type (conference or school), json_data
+    json_data contains sub_html parsed via reconstructing API using external_id
+3. Push each item to Postgres DB nil_production table ncaa_directory
+4. Pull sports from directory api
+5. Push sports to nil_production table directory_sports
+6. Iternally generate unique combinations of ncaa_directory_id, directory_sport_id
+    Executed via pandas table find in parsed HTML data contained in json_data in ncaa_directory
+7. Fetch HTML from base domains from json_data in ncaa_directory
+8. Push HTML data alongside ncaa_directory_id, domain(usually full url) to Minio object storage
+9. Find hrefs in HTML data for each object in Minio (using latest scraped object) using soup
+10. Use urllib to reconstruct relative paths
+11. Construct minimal admin front end to manage aliasing, adding endpoint types, and modifying sport names as needed using React
+12. ...
+13. Store the hrefs per sport per directory id in the database
+    - This has to be per endpoint type
+    - store endpoint types in a separate table
+    - endpoint types / url configs editable via the frontend
+    - also have to think about years, like fetching prior data ( this can be acheived via endpoint html as well)
+    - this will have endpoints for relevant sports that I 'alias' and relevant endpoint types
+14. Hit endpoints and store html for those pages in minio
+15. Repeat similar process as above, where are crawling for hrefs in those sub endpoints as well
+    and then storing that html in minio as well
+16. Once sufficient depth is acheived, begin parsing process where we collect and stage relevant data
+
+Next steps
+    - Recon for aliasing and endpoint types
+    - Hit every endpoint and store HTML there
+    - Minio status -> postgres
+
