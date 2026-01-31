@@ -2,6 +2,9 @@ from .internal import SchoolEndpoint
 from .handler import SchoolObjectHandler
 from .client import SchoolClient
 from tqdm import tqdm
+import logging
+
+logger = logging.getLogger(__name__)
 
 class ObjectRunner():
     
@@ -16,7 +19,11 @@ class ObjectRunner():
     def push_endpoints(self):
         endpoints = self.object.map_endpoints()
         for endpoint in tqdm(endpoints, desc='Pushing base endpoints...'):
-            self.handler.upsert_endpoint(endpoint)
+            try:
+                self.handler.upsert_endpoint(endpoint)
+            
+            except Exception as e:
+                logger.error(f"Failed to upsert endpoint {endpoint}: {e}", exc_info=True)
 
     def process_endpoints(self):
         raw_data = self.client.fetch_endpoint_data()

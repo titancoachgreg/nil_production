@@ -21,7 +21,7 @@ class SchoolEndpoint:
         return (DirectorySport
                 .objects
                 .filter(aliases__name__isnull=False)
-                .values_list('id','name','aliases__name'))
+                .values_list('id','aliases__name'))
     
     @classmethod
     def _fetch_endpoint_types(cls) -> tuple:
@@ -49,10 +49,8 @@ class SchoolEndpoint:
     @classmethod
     def _fetch_base_domain_object(cls) -> list:
         results = []
-
-        entities = cls._fetch_ncaa_entities()
         
-        for directory_id in tqdm(entities, desc='Fetching objects for school base domains...'):
+        for directory_id in tqdm(cls._fetch_ncaa_entities(), desc='Fetching objects for school base domains...'):
             fetched_object = (cls.
                               minio_client.
                               get_minio_data(bucket_name='schools', 
@@ -69,8 +67,7 @@ class SchoolEndpoint:
         endpoints = cls._fetch_endpoints()
         
         for endpoint_id in tqdm(endpoints, desc='Fetching objects for school endpoints...'):
-            fetched_object = (cls.minio_client.
-                              get_minio_data(bucket_name='schools', 
+            fetched_object = (cls.minio_client.get_minio_data(bucket_name='schools', 
                                              prefix=f'endpoints/{endpoint_id}/'))
             
             results.append(fetched_object)
@@ -78,37 +75,33 @@ class SchoolEndpoint:
         return results
 
     @classmethod 
-    def fetch_hrefs(cls) -> list:
-        base_domains = cls._fetch_base_domain_object()
+    def _fetch_hrefs(cls) -> list:
 
-        return HREFHandler(base_domains, 'ncaa_directory_id').find_hrefs()
+        return HREFHandler(cls._fetch_base_domain_object(), 'ncaa_directory_id').find_hrefs()
     
     @classmethod
     def classify_hrefs(cls) -> list:
-        sports_with_aliases = cls._fetch_ncaa_sports_and_aliases()
-        hrefs = cls.fetch_hrefs()
-        endpoint_types = cls._fetch_endpoint_types()
 
         alias_to_sport = {}
-        for sport_id, sport_name, alias_name in sports_with_aliases:
+        for sport_id, alias_name in cls._fetch_ncaa_sports_and_aliases():
             if alias_name:
                 alias_to_sport[alias_name.lower()] = sport_id
 
         type_lookup = {
             type_name.lower(): type_id 
-            for type_id, type_name in endpoint_types
+            for type_id, type_name in cls._fetch_endpoint_types()
             if type_name
-        }
+        } 
 
         matching_endpoints = []
 
-        for href in tqdm(hrefs, desc='Parsing and classifying hrefs...'):
+        for href in tqdm(cls._fetch_hrefs(), desc='Parsing and classifying hrefs...'):
             for item in href:
-                url = item.get('relative_path')
+                child_url = item.get('relative_path')
                 matched_sport_id = None
                 for alias, sport_id in alias_to_sport.items():
                     pattern = r'\b' + re.escape(alias) + r'\b'
-                    if re.search(pattern, url):
+                    if re.search(pattern, child_url):
                         matched_sport_id = sport_id
                         break
 
@@ -117,7 +110,7 @@ class SchoolEndpoint:
 
                 matched_type_id = None
                 for type_name, type_id in type_lookup.items():
-                    if type_name in url:
+                    if type_name in child_url:
                         matched_type_id = type_id
                         break
 
@@ -127,8 +120,8 @@ class SchoolEndpoint:
                 result = {
                     'ncaa_directory_id': item.get('identifier'),
                     'ncaa_directory_sport_id': matched_sport_id,
-                    'endpoint_type_id': matched_type_id,
-                    'endpoint': item.get('relative_path')
+                    'endpoint': item.get('relative_path'),
+                    'endpoint_type_id': matched_type_id
                 }
 
                 matching_endpoints.append(result)
@@ -137,17 +130,15 @@ class SchoolEndpoint:
     
     @classmethod
     def map_endpoints(cls) -> list:
-        entities = cls._fetch_ncaa_sport_directory()
-        data = cls.classify_hrefs()
 
         mapping = {
             (directory_id, directory_sport_id): sport_directory_id
-            for sport_directory_id, directory_id, directory_sport_id in entities
+            for sport_directory_id, directory_id, directory_sport_id in cls._fetch_ncaa_sport_directory()
         }
 
         mapped_endpoints = []
 
-        for item in data:
+        for item in cls.classify_hrefs():
             key = (item.get('ncaa_directory_id'), item.get('ncaa_directory_sport_id'))
             
             matched_sport_directory_id = mapping.get(key)

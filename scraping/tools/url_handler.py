@@ -37,6 +37,7 @@ class HREFHandler:
             for href in hrefs:
                 paths.append({
                     'identifier': item.get(f'{self.identifier}'),
+                    'parent_endpoint': item.get('endpoint'),
                     'relative_path': urljoin(item.get('endpoint'), href)
                 })
 

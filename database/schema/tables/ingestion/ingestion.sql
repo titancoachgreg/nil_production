@@ -47,6 +47,7 @@ create table endpoint_types (
 create table endpoints (
     id bigserial not null primary key,
     ncaa_sport_directory_id bigint not null references ncaa_sport_directory(id) on delete restrict,
+    parent_endpoint_id bigint references endpoints(id) on delete restrict,
     endpoint_type_id bigint not null references endpoint_types(id) on delete restrict,
     endpoint text,
     created_at timestamptz not null,
@@ -54,7 +55,12 @@ create table endpoints (
     deleted_at timestamptz
 );
 
-create table minio_relations (
-    id bigserial not null primary key,
+create table routes (
+	id bigserial not null primary key,
+	parent_id bigint references endpoints(id) on delete restrict,
+	child_id bigint references endpoints(id) on delete restrict,
+	created_at timestamptz not null,
+    updated_at timestamptz not null,
+    deleted_at timestamptz
+);
     
-)
