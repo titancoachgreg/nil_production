@@ -2,7 +2,6 @@ import pandas as pd
 from io import StringIO
 from bs4 import BeautifulSoup
 from urllib.parse import urljoin
-from concurrent.futures import ThreadPoolExecutor, as_completed
 from tqdm import tqdm
 
 class TableHandler:
@@ -34,11 +33,19 @@ class HREFHandler:
             if not hrefs:
                 continue
 
+            endpoint = item.get('endpoint')
+
             for href in hrefs:
+
+                resolved = urljoin(endpoint, href)
+
+                if not resolved.startswith(endpoint) or resolved == endpoint:
+                    continue
+
                 paths.append({
                     'identifier': item.get(f'{self.identifier}'),
                     'parent_endpoint': item.get('endpoint'),
-                    'relative_path': urljoin(item.get('endpoint'), href)
+                    'relative_path': resolved
                 })
 
             results.append(paths)

@@ -57,8 +57,8 @@ create table endpoints (
 
 create table routes (
 	id bigserial not null primary key,
-	parent_id bigint references endpoints(id) on delete restrict,
-	child_id bigint references endpoints(id) on delete restrict,
+	parent_endpoint_id bigint references endpoints(id) on delete restrict,
+	child_endpoint_id bigint references endpoints(id) on delete restrict,
 	created_at timestamptz not null,
     updated_at timestamptz not null,
     deleted_at timestamptz

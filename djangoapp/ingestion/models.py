@@ -62,5 +62,9 @@ class Endpoint(TimeStampedModel):
     class Meta:
         db_table = 'endpoints'
 
-class MinioRelation(models.Model):
-    pass
+class Route(TimeStampedModel):
+    parent_endpoint = models.ForeignKey(Endpoint, on_delete=models.RESTRICT, null=True, blank=True, related_name='parent')
+    child_endpoint = models.ForeignKey(Endpoint, on_delete=models.RESTRICT, null=True, blank=True, related_name='child')
+
+    class Meta:
+        db_table = 'routes'

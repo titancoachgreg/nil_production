@@ -4,7 +4,7 @@ from scraping.tools.url_handler import HREFHandler
 from tqdm import tqdm
 import re
 
-class SchoolEndpoint:
+class SchoolData:
 
     minio_client = MinioClient()
 
@@ -15,8 +15,8 @@ class SchoolEndpoint:
                 .filter(member_type=2)
                 .values_list('id', flat=True)
                 .order_by('id'))
-    
-    @classmethod    
+     
+    @classmethod
     def _fetch_ncaa_sports_and_aliases(cls) -> tuple:
         return (DirectorySport
                 .objects
@@ -29,6 +29,7 @@ class SchoolEndpoint:
                 .objects
                 .values_list('id', 'name'))
     
+
     @classmethod
     def _fetch_ncaa_sport_directory(cls) -> tuple:
         return (NCAASportDirectory
@@ -45,7 +46,7 @@ class SchoolEndpoint:
                 .objects
                 .values_list('id', flat=True)
                 .order_by('id'))
-
+    
     @classmethod
     def _fetch_base_domain_object(cls) -> list:
         results = []
@@ -63,16 +64,16 @@ class SchoolEndpoint:
     @classmethod
     def _fetch_endpoint_object(cls) -> list:
         results = []
-
-        endpoints = cls._fetch_endpoints()
         
-        for endpoint_id in tqdm(endpoints, desc='Fetching objects for school endpoints...'):
+        for endpoint_id in tqdm(cls._fetch_endpoints()[:20], desc='Fetching objects for school endpoints...'):
             fetched_object = (cls.minio_client.get_minio_data(bucket_name='schools', 
                                              prefix=f'endpoints/{endpoint_id}/'))
             
             results.append(fetched_object)
             
         return results
+
+class SchoolBaseEndpoint(SchoolData):
 
     @classmethod 
     def _fetch_hrefs(cls) -> list:
@@ -155,4 +156,17 @@ class SchoolEndpoint:
             mapped_endpoints.append(result)
         
         return mapped_endpoints
-        
+
+class SchoolEndpoint(SchoolData):
+
+    @classmethod
+    def _fetch_hrefs(cls) -> list:
+
+        return HREFHandler(cls._fetch_endpoint_object(), 'endpoint_id').find_hrefs()
+    
+    @classmethod
+    def test_hrefs(cls):
+
+        for item in cls._fetch_hrefs()[1]:
+            print(item)
+

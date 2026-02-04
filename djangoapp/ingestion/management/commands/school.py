@@ -9,7 +9,8 @@ class Command(BaseCommand):
             type=str,
             choices=['get-base-hrefs',
                      'push-base-endpoints',
-                     'push-endpoint-data'],
+                     'push-endpoint-data',
+                     'test-sub-hrefs'],
             required=True
         )
 
@@ -29,3 +30,6 @@ class Command(BaseCommand):
             self.stdout.write('Pushing endpoint data to minio...')
             runner.process_endpoints()
     
+        if mode == 'test-sub-hrefs':
+            self.stdout.write('Testing sub endpoint structure')
+            runner.test_get_hrefs()

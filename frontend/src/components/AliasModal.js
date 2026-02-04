@@ -11,6 +11,7 @@ function AliasModal({ sportId, onClose }) {
     } = useFetch(`http://localhost:8000/api/sport-aliases/?ncaa_directory_sport=${sportId}`,[])
 
     const [newAlias, setNewAlias] = useState([])
+    const [editedAliases, setEditedAliases] = useState({})
 
     const addAlias = () => {
         axios.post('http://localhost:8000/api/sport-aliases/', {
@@ -49,16 +50,21 @@ function AliasModal({ sportId, onClose }) {
             {loading ? <p>Loading</p> : (
                 <ul>
                     {aliases.map(alias => {
-                        const [editedName, setEditedName] = useState(alias.name)
+                        const editedName = editedAliases[alias.id] ?? alias.name
+
+                        const handleChange = (e) => {
+                            setEditedAliases(prev => ({
+                                ...prev,
+                                [alias.id]: e.target.value
+                            }))
+                        }
 
                         const hasChanged = editedName !== alias.name
 
                         return (
                             <li key={alias.id}>
                                 <input 
-                                    value={editedName}
-                                    onChange={e => setEditedName(e.target.value)}
-                                    />
+                                    value={editedName} onChange={handleChange}/>
                                 <button
                                     onClick={() => updateAlias(alias.id, editedName)}
                                     disabled={!hasChanged}
